@@ -37,13 +37,21 @@ button{width:100%;margin-top:14px;padding:13px;border:0;border-radius:10px;backg
 <label>আপনার নাম</label><input id="n" required>
 <label>ফোন নম্বর</label><input id="ph" type="tel" inputmode="tel" required placeholder="01XXXXXXXXX">
 <label>পূর্ণ ঠিকানা</label><textarea id="ad" rows="3" required></textarea>
+<label>ডেলিভারি এলাকা</label>
+<label style="font-weight:400"><input type="radio" name="d" value="100" checked style="width:auto"> ঢাকার ভেতরে — ৳১০০</label>
+<label style="font-weight:400"><input type="radio" name="d" value="150" style="width:auto"> ঢাকার বাইরে — ৳১৫০</label>
 <p class="p" style="margin-top:12px">💵 পেমেন্ট: ক্যাশ অন ডেলিভারি — পণ্য হাতে পেয়ে টাকা দিন</p>
-<div class="t">মোট: ৳<span id="tot">৫০০</span></div>
-<button type="submit">হোয়াটসঅ্যাপে অর্ডার পাঠান</button>
+<div class="t">মোট: ৳<span id="tot">৬০০</span> <small>(ডেলিভারিসহ)</small></div>
+<button type="submit" id="btn">অর্ডার করুন</button>
 </form>
+<div id="ok" style="display:none;margin-top:16px;padding:18px;border-radius:12px;background:var(--card);border:1px solid var(--bd);text-align:center">
+<div style="font-size:2.4rem">✅</div><h2 style="color:var(--pri);margin:6px 0">আপনার অর্ডার সম্পন্ন হয়েছে</h2>
+<p class="p">ধন্যবাদ! আমরা শীঘ্রই আপনাকে ফোন করে কনফার্ম করব।</p>
+<a id="wa" target="_blank" style="color:var(--pri)">চাইলে হোয়াটসঅ্যাপেও জানাতে পারেন</a></div>
 </div>
 <script>
 // ===== এখানে আপনার তথ্য বদলান =====
+var EMAIL = "faisaldewan325@gmail.com"; // অর্ডার এই ইমেইলে আসবে
 var WHATSAPP = "8801586371192"; // দেশের কোডসহ নম্বর, যেমন 8801712345678
 var PRODUCTS = [
  {e:"🎁",n:"গিফট কম্বো বক্স",p:500}
@@ -56,12 +64,21 @@ PRODUCTS.forEach(function(x,i){
 });
 function calc(){var t=0,items=[];
  L.querySelectorAll("input").forEach(function(el){var q=+el.value||0;if(q>0){var x=PRODUCTS[el.dataset.i];t+=q*x.p;items.push(x.n+" x"+q+" = ৳"+q*x.p)}});
+ var dv=+document.querySelector('input[name=d]:checked').value;
+ if(items.length){t+=dv;items.push("ডেলিভারি চার্জ = ৳"+dv)}
  document.getElementById("tot").textContent=bn(t);return {t:t,items:items}}
 L.addEventListener("input",calc);
+document.querySelectorAll("input[name=d]").forEach(function(x){x.addEventListener("change",calc)});
+calc();
 document.getElementById("f").addEventListener("submit",function(e){
  e.preventDefault();var r=calc();
  if(!r.items.length){alert("কম্বোর সংখ্যা দিন (কমপক্ষে ১)");return}
  var m="নতুন অর্ডার\n\n"+r.items.join("\n")+"\n\nমোট: ৳"+r.t+"\nপেমেন্ট: ক্যাশ অন ডেলিভারি\n\nনাম: "+document.getElementById("n").value+"\nফোন: "+document.getElementById("ph").value+"\nঠিকানা: "+document.getElementById("ad").value;
- window.open("https://wa.me/"+WHATSAPP+"?text="+encodeURIComponent(m),"_blank");
+ var b=document.getElementById("btn");b.disabled=true;b.textContent="পাঠানো হচ্ছে...";
+ fetch("https://formsubmit.co/ajax/"+EMAIL,{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},
+  body:JSON.stringify({_subject:"নতুন অর্ডার: "+document.getElementById("n").value,_captcha:"false",নাম:document.getElementById("n").value,ফোন:document.getElementById("ph").value,ঠিকানা:document.getElementById("ad").value,অর্ডার:r.items.join(" | "),মোট:"৳"+r.t,পেমেন্ট:"ক্যাশ অন ডেলিভারি"})})
+ .then(function(x){if(!x.ok)throw 0;document.getElementById("f").style.display="none";document.getElementById("ok").style.display="block";
+  document.getElementById("wa").href="https://wa.me/"+WHATSAPP+"?text="+encodeURIComponent(m)})
+ .catch(function(){b.disabled=false;b.textContent="অর্ডার করুন";alert("অর্ডার যায়নি, আবার চেষ্টা করুন")});
 });
 </script></body></html>
